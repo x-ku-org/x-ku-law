@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.xku</groupId>
+        <artifactId>x-ku-law</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>lr-module-content</artifactId>
+    <name>lr-module-content</name>
+    <description>运营内容域：专题/Banner/帮助文章</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-common</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,43 @@
+{
+  "name": "x-ku-law-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "pnpm typecheck && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@fontsource/noto-sans-sc": "^5.2.9",
+    "@fontsource/noto-serif-sc": "^5.2.9",
+    "@lucide/vue": "^1.0.0",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "axios": "^1.7.9",
+    "docx-preview": "^0.3.7",
+    "dompurify": "^3.4.7",
+    "jspdf": "^4.2.1",
+    "marked": "^18.0.4",
+    "pinia": "^2.3.0",
+    "vite": "^6.0.5",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["core-js", "esbuild", "vue-demi"]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/dompurify": "^3.2.0",
+    "@types/node": "^22.10.2",
+    "@vue/eslint-config-typescript": "^14.1.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vue-tsc": "^2.2.0",
+    "wawoff2": "^2.0.1"
+  }
+}

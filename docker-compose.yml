@@ -1,0 +1,162 @@
+version: "3.9"
+
+networks:
+  lr-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
+  es-data:
+  # minio-data: # Uncomment when MinIO is needed
+
+services:
+  # ===== MySQL 8.0 =====
+  mysql:
+    image: mysql:8.0
+    container_name: lr-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: lr_law
+      MYSQL_USER: lr_user
+      MYSQL_PASSWORD: lr_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "lr_user", "-plr_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lr-network
+
+  # ===== Redis 7 =====
+  redis:
+    image: redis:7-alpine
+    container_name: lr-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lr-network
+
+  # ===== RabbitMQ 3 (with Management UI) =====
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: lr-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - lr-network
+
+  # ===== Application =====
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lr-app
+    restart: unless-stopped
+    # 从 .env 读取密钥与开关（AI/embedding key、PROCESS_*/VECTOR_* 等）；
+    # 下面 environment 块优先级更高，会覆盖 .env 中的中间件连接（指向容器服务名）。
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: lr_law
+      DB_USER: lr_user
+      DB_PASSWORD: lr_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      MQ_HOST: rabbitmq
+      MQ_PORT: 5672
+      MQ_VHOST: /
+      MQ_USER: guest
+      MQ_PASSWORD: guest
+      ES_URIS: http://elasticsearch:9200
+      SEARCH_ENABLED: "true"
+      JWT_SECRET: bXktc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmcK
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - lr-network
+
+  # ===== Elasticsearch 8.13.4（全文检索 + 向量 dense_vector/kNN）=====
+  elasticsearch:
+    image: elasticsearch:8.13.4
+    container_name: lr-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      xpack.security.enabled: "false"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - lr-network
+
+  # ===== MinIO (disabled by default) =====
+  # minio:
+  #   image: minio/minio:latest
+  #   container_name: lr-minio
+  #   environment:
+  #     MINIO_ROOT_USER: minioadmin
+  #     MINIO_ROOT_PASSWORD: minioadmin
+  #   command: server /data --console-address ":9001"
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - minio-data:/data
+  #   networks:
+  #     - lr-network

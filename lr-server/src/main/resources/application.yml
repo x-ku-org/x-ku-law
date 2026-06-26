@@ -1,0 +1,244 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: x-ku-law
+  profiles:
+    active: local
+
+  # ===== 文件上传（头像等服务端 multipart 直传）=====
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+  # ===== 数据源 =====
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:lr_law}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ===== Flyway 数据库版本迁移 =====
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    encoding: UTF-8
+
+  # ===== Redis =====
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # ===== RabbitMQ（接口预留，二期实现） =====
+  rabbitmq:
+    host: ${MQ_HOST:localhost}
+    port: ${MQ_PORT:5672}
+    virtual-host: ${MQ_VHOST:/}
+    username: ${MQ_USER:guest}
+    password: ${MQ_PASSWORD:guest}
+
+  # ===== Elasticsearch（全文检索 + 向量 dense_vector/kNN，统一由 ES 承担） =====
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}
+
+  # ===== Jackson =====
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  ai:
+    model:
+      chat: none
+
+# ===== MyBatis-Plus =====
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# ===== springdoc OpenAPI =====
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+# ===== Actuator =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ===== 应用自定义配置 =====
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:bXktc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmcK}
+      access-ttl-seconds: ${JWT_ACCESS_TTL:7200}
+      refresh-ttl-seconds: ${JWT_REFRESH_TTL:604800}
+    cors:
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173,http://127.0.0.1:5173}
+
+  # ===== 全文检索 =====
+  search:
+    enabled: ${SEARCH_ENABLED:true}
+    index-task-interval-ms: 10000
+    max-retry: 3
+    processing-timeout-minutes: 5
+
+  # ===== 向量检索（ES 原生 dense_vector/kNN，条款分片级） =====
+  # enabled 默认 false：嵌入模型未接入前保持关闭，避免向量同步处理器空抛异常刷日志。
+  # ES + 嵌入模型就绪后置 true，并确保 dimension 与所选模型一致（重建索引才会生效）。
+  vector:
+    enabled: ${VECTOR_ENABLED:false}
+    index-name: law_segment
+    dimension: ${EMBED_DIM:1536}
+    similarity: cosine
+    sync-task-interval-ms: 10000
+    max-retry: 3
+    processing-timeout-minutes: 5
+    # 真实嵌入客户端（OpenAI 兼容 /v1/embeddings）。enabled=false 时回退 NoOpEmbeddingClient。
+    # 置 true 需配 base-url/api-key/model，并保证 dimension 与模型一致。
+    embedding:
+      enabled: ${EMBED_ENABLED:false}
+      base-url: ${EMBED_BASE_URL:${OPENAI_BASE_URL:https://api.openai.com}}
+      embeddings-path: ${EMBED_PATH:/v1/embeddings}
+      api-key: ${EMBED_API_KEY:${OPENAI_API_KEY:}}
+      model: ${AI_EMBED_MODEL_ID:text-embedding-3-small}
+
+  # ===== 法规处理管线 =====
+  # 结构化先行 / AI 旁路：主管线只跑结构化阶段（文本提取→分段→发布→变更分析→AI入队），
+  # 不触发 LLM；2 万+ 文件首次回填只需 embedding key（向量）即可全量跑完、可全文+语义检索+逐条对比。
+  # AI（摘要/标签/整篇解读）解耦到 app.process.ai 旁路队列，单独开关、单独限流。
+  # 两条入口（采集批量 / 管理员上传）建好版本后入队 lr_law_process_task，由本管线异步消费。
+  # enabled 默认 false：无数据接入时保持关闭，避免空轮询。
+  process:
+    enabled: ${PROCESS_ENABLED:false}
+    task-interval-ms: ${PROCESS_INTERVAL:10000}
+    max-retry: ${PROCESS_MAX_RETRY:3}
+    processing-timeout-minutes: ${PROCESS_TIMEOUT_MIN:30}
+    # 每批领取的任务数与受控并发（CAS 领取保证并发安全）；首次大批量回填可调大以加速。
+    batch-size: ${PROCESS_BATCH_SIZE:20}
+    concurrency: ${PROCESS_CONCURRENCY:4}
+    # 单个分片最大字符数（向量化粒度）
+    segment-max-chars: ${PROCESS_SEGMENT_MAX_CHARS:1000}
+    # ===== AI 旁路（摘要/解读，需 AI 模型 apikey；见 app.ai） =====
+    # enabled 默认 false：结构化先行。提供 AI key 后置 true，存量历史用 POST /ops/ai-tasks/backfill 回填。
+    # batch/并发默认更小以尊重 LLM 限流。
+    ai:
+      enabled: ${PROCESS_AI_ENABLED:false}
+      task-interval-ms: ${PROCESS_AI_INTERVAL:10000}
+      max-retry: ${PROCESS_AI_MAX_RETRY:3}
+      processing-timeout-minutes: ${PROCESS_AI_TIMEOUT_MIN:30}
+      batch-size: ${PROCESS_AI_BATCH_SIZE:5}
+      concurrency: ${PROCESS_AI_CONCURRENCY:2}
+    # 元数据富集（摘要）最大输入字符
+    metadata:
+      max-input-chars: ${PROCESS_METADATA_MAX_INPUT_CHARS:6000}
+    # 整篇解读最大输入字符
+    interpretation:
+      max-input-chars: ${PROCESS_INTERPRETATION_MAX_INPUT_CHARS:8000}
+
+  # ===== 采集接入（定时扫描对象存储中的采集产物，接入暂存→法规→检索） =====
+  # enabled 默认 false：对象存储无采集数据前保持关闭，避免空扫。
+  # 抓取由外部 Python 流程负责（见 data-collection/），上传到与本应用同一个 MinIO 桶。
+  # 数据源前缀/元数据文件名由各 SourceAdapter（cn.xku.law.collect.source）自带，不在此配置。
+  collect:
+    enabled: ${COLLECT_ENABLED:false}
+    # 定时批量接入的 cron（默认每月 1 日 03:00，对齐 V5 种子任务的 cron_expr）；
+    # 不再每隔数分钟轮询扫描，仅在该时刻读取 MinIO 中已完成的运行文件夹。
+    cron: ${COLLECT_CRON:0 0 3 1 * ?}
+    # 仅用于「重置超时卡住的采集标记」这一 DB 轮询的间隔（非对象存储扫描）。
+    scan-interval-ms: ${COLLECT_SCAN_INTERVAL:300000}
+    batch-size: ${COLLECT_BATCH_SIZE:5}
+    processing-timeout-minutes: ${COLLECT_TIMEOUT_MIN:30}
+    # 初始全量历史导入时置 true，抑制订阅预警（避免对 ~3 万条历史版本触发海量预警）；
+    # 增量接入新法规时保持 false，正常预警。
+    suppress-alerts: ${COLLECT_SUPPRESS_ALERTS:false}
+
+  # ===== 对象存储（MinIO / S3 兼容，前端直传预签名） =====
+  storage:
+    endpoint: ${OSS_ENDPOINT:http://localhost:9000}
+    bucket: ${OSS_BUCKET:lr-law}
+    access-key: ${OSS_ACCESS_KEY:minioadmin}
+    secret-key: ${OSS_SECRET_KEY:minioadmin}
+    # 预签名 URL 有效期（秒）
+    presign-expire-seconds: ${OSS_PRESIGN_EXPIRE:600}
+    # 单文件大小上限（字节），默认 50MB
+    max-file-size: ${OSS_MAX_FILE_SIZE:52428800}
+    # 是否公开读桶：false=私有桶，下载走临时预签名 GET URL
+    public-read: ${OSS_PUBLIC_READ:false}
+
+  ai:
+    default-provider: ${AI_DEFAULT_PROVIDER:openai}
+    providers:
+      openai:
+        enabled: ${AI_OPENAI_ENABLED:true}
+        type: openai
+        api-key: ${OPENAI_API_KEY:${AI_API_KEY:}}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        completions-path: ${OPENAI_COMPLETIONS_PATH:/v1/chat/completions}
+        model: ${OPENAI_MODEL_ID:${AI_MODEL_ID:gpt-4o}}
+        temperature: ${OPENAI_TEMPERATURE:0.2}
+        max-tokens: ${OPENAI_MAX_TOKENS:4096}
+      deepseek:
+        enabled: ${AI_DEEPSEEK_ENABLED:true}
+        type: deepseek
+        api-key: ${DEEPSEEK_API_KEY:}
+        base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+        completions-path: ${DEEPSEEK_COMPLETIONS_PATH:/chat/completions}
+        model: ${DEEPSEEK_MODEL_ID:deepseek-chat}
+        temperature: ${DEEPSEEK_TEMPERATURE:0.2}
+        max-tokens: ${DEEPSEEK_MAX_TOKENS:4096}
+      qwen:
+        enabled: ${AI_QWEN_ENABLED:true}
+        type: dashscope
+        api-key: ${DASHSCOPE_API_KEY:}
+        base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com}
+        model: ${QWEN_MODEL_ID:qwen-plus}
+        temperature: ${QWEN_TEMPERATURE:0.2}
+        max-tokens: ${QWEN_MAX_TOKENS:4096}
+    # 嵌入模型（向量化用，base-url/api-key 复用上面 app.ai；真实 EmbeddingClient 为下一期）
+    embedding:
+      model-id: ${AI_EMBED_MODEL_ID:text-embedding-3-small}
+      dimension: ${EMBED_DIM:1536}
+    # AI 可溯源问答（Agent 自主检索 + 流式）
+    chat:
+      # 历史原文回灌的字符预算；超过则把较旧轮次增量折叠进滚动摘要
+      context-char-budget: ${AI_CHAT_CONTEXT_CHAR_BUDGET:6000}
+      # 至少保留多少条最近消息为原文（不被摘要吞掉）
+      keep-recent-messages: ${AI_CHAT_KEEP_RECENT_MESSAGES:6}
+      # 每次折叠进摘要的最旧消息条数
+      summarize-batch-size: ${AI_CHAT_SUMMARIZE_BATCH_SIZE:4}
+      # 并发流式会话上限
+      max-concurrency: ${AI_CHAT_MAX_CONCURRENCY:8}

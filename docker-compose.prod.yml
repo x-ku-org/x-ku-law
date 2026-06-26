@@ -1,0 +1,33 @@
+version: "3.9"
+
+# 生产部署：只启动 app，中间件全部连接外部托管实例
+# 使用前：cp .env.example .env，填入真实连接信息
+# 启动：docker-compose -f docker-compose.prod.yml up -d
+
+networks:
+  lr-prod-network:
+    driver: bridge
+
+services:
+  app:
+    image: ${APP_IMAGE:-x-ku-law:latest}
+    container_name: lr-app-prod
+    restart: always
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    networks:
+      - lr-prod-network

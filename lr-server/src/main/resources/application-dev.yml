@@ -1,0 +1,43 @@
+# 开发环境：连接本地 Docker Compose 服务，日志级别 DEBUG
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:lr_law}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: ${DB_USER:lr_user}
+    password: ${DB_PASSWORD:lr_password}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  rabbitmq: # 接口预留，二期实现
+    host: ${MQ_HOST:localhost}
+    port: ${MQ_PORT:5672}
+    virtual-host: ${MQ_VHOST:/}
+    username: ${MQ_USER:guest}
+    password: ${MQ_PASSWORD:guest}
+
+app:
+  search:
+    enabled: false   # 本地无 ES 时退回 NoOp，检索接口返回 503
+  vector:
+    enabled: false   # 本地无 ES / 无嵌入模型，向量同步处理器不启用
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  health:
+    # 本地开发时排除尚未接入的外部服务健康检查
+    elasticsearch:
+      enabled: false
+    rabbit:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    cn.xku.law: DEBUG
+    com.baomidou.mybatisplus: DEBUG
+    org.springframework.security: DEBUG

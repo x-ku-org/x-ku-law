@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.xku</groupId>
+        <artifactId>x-ku-law</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>lr-server</artifactId>
+    <name>lr-server</name>
+    <description>启动层：Spring Boot 入口 + 基础设施配置 + 全部模块装配</description>
+
+    <dependencies>
+        <!-- ===== Internal Modules ===== -->
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-system</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-collect</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-law</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-search</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-subscription</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-compliance</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-workspace</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-content</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-support</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.xku</groupId>
+            <artifactId>lr-module-openapi</artifactId>
+        </dependency>
+
+        <!-- ===== MyBatis-Plus (plugins: PaginationInnerInterceptor, TenantLineInnerInterceptor) ===== -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
+        <!-- ===== Security ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- JWT runtime implementation -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ===== Cache / Session ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- ===== AOP (OperLogAspect) ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- ===== Actuator ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ===== MQ (interface placeholder — RabbitMQ) ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
+        <!-- ===== Elasticsearch (full-text + vector search) ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+
+        <!-- ===== Spring AI ChatClient（Agent 工具调用 / 流式问答；ChatModel 由 lr-module-ai 传递引入） ===== -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-client-chat</artifactId>
+        </dependency>
+
+        <!-- ===== 对象存储客户端：MinIO（实现 FileStorageClient，前端直传预签名） ===== -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+        </dependency>
+
+        <!-- ===== 文本抽取：POI(docx/doc) + PDFBox(pdf)，供处理管线 TextExtractionStage 使用 ===== -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+        </dependency>
+
+        <!-- ===== Database ===== -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
+        <!-- ===== Test ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ===== 集成测试：Testcontainers（版本由 spring-boot-dependencies 管理） ===== -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!--
+                集成测试（命名 *IT，需 Docker）由 failsafe 在 verify 阶段运行；
+                surefire 默认只跑 *Test，因此 `mvn test` 保持快速，`mvn verify` 才跑集成测试。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

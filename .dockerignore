@@ -1,0 +1,13 @@
+target/
+*/target/
+.git/
+.idea/
+*.iml
+*.md
+*.docx
+*.pdf
+.DS_Store
+*.log
+logs/
+.env
+*.local.yml

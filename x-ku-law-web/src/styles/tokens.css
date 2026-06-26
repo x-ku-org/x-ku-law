@@ -1,0 +1,63 @@
+/* X-KU design tokens — aligned with DESIGN.md & styles.css (prototype) */
+:root {
+  color-scheme: light;
+
+  /* Paper */
+  --paper: #ffffff;
+  --paper-2: #fafafa;
+  --paper-sunk: #f2f2f4;
+  --paper-card: #ffffff;
+
+  /* Ink — deep navy from logo */
+  --ink: #0b1530;
+  --ink-2: #2a3553;
+  --ink-3: #4a536f;
+  --muted: #71758a;
+  --muted-2: #a4a7b6;
+
+  /* Hairlines */
+  --rule: #e7e7eb;
+  --rule-strong: #d4d4da;
+  --rule-ink: rgba(11, 21, 48, 0.1);
+
+  /* Accent — X-KU electric blue (logo diamond) */
+  --accent: #1e5bff;
+  --accent-deep: #0f2d8e;
+  --accent-soft: rgba(30, 91, 255, 0.08);
+  --accent-glow: rgba(30, 91, 255, 0.22);
+
+  /* Editorial accents */
+  --gold: #a8843b;
+  --gold-soft: rgba(168, 132, 59, 0.1);
+  --rose: #b5432f;
+  --rose-soft: rgba(181, 67, 47, 0.08);
+  --moss: #4f6e3b;
+  --moss-soft: rgba(79, 110, 59, 0.1);
+
+  /* Type */
+  --serif-display: "Instrument Serif", "Noto Serif SC", "Source Han Serif SC", serif;
+  --serif-body: "Source Serif 4", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  --sans: "Geist", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Layout — rail-w wider than prototype (64px) for labeled Vue nav */
+  --gutter: 32px;
+  --rail-w: 208px;
+  --topbar-h: 56px;
+
+  /* Controls */
+  --control-h: 36px;
+  --control-h-sm: 28px;
+  --control-h-lg: 42px;
+  --radius-control: 4px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Type scale */
+  --font-xxs: 11px;
+  --font-xs: 12px;
+  --font-sm: 13px;
+}

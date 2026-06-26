@@ -1,0 +1,21 @@
+# 集成测试 profile：数据源 / Redis / ES 连接由 Testcontainers 经 @DynamicPropertySource 注入，
+# 此处只放与连接无关的测试期开关。
+spring:
+  # RabbitMQ 当前仅 NoOp 占位（无 @RabbitListener / RabbitTemplate 依赖），
+  # 集成测试不起 MQ 容器，排除其自动配置避免无谓的连接尝试。
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+app:
+  search:
+    # 默认关闭全文检索（走 NoOpSearchClient，无需 ES）；
+    # 需要真实 ES 的检索用例在 AbstractSearchIntegrationTest 中覆盖为 true。
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    cn.xku.law: INFO
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN

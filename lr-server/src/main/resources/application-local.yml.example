@@ -1,0 +1,137 @@
+# ============================================================
+# local profile 模板
+#
+# 作用：用一套个人配置连接「你自己已有的 MySQL / Redis / RabbitMQ / ES」，
+#       而不是 docker-compose 一把全起。每个组件都能独立指向不同地址。
+#
+# 使用：
+#   1. 复制本文件为同目录下的 application-local.yml
+#        (Windows) copy application-local.yml.example application-local.yml
+#        application-local.yml 已被 .gitignore 忽略，可放真实地址/口令
+#   2. 按需修改下面各项默认值，或在启动时用环境变量覆盖
+#   3. 激活 local profile 启动，任选其一：
+#        - Maven：  mvn spring-boot:run -pl lr-server -Dspring-boot.run.profiles=local
+#        - jar：    java -jar lr-server.jar --spring.profiles.active=local
+#        - 环境变量：SPRING_PROFILES_ACTIVE=local
+#        - IDE：    Run Configuration 里 Active profiles 填 local
+#
+# 注意：application.yml 默认 active=local，上面任一方式都会覆盖 dev。
+#
+# 首次登录（Flyway V2 种子，仅开发/测试）：
+#   租户编码 platform，用户名 admin，密码 Admin@123
+# ============================================================
+spring:
+  ai:
+    model:
+      chat: none
+
+  # ===== MySQL（指向你已有的实例）=====
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:lr_law}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+
+  # ===== Redis（指向你已有的实例）=====
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+
+  # ===== RabbitMQ（没有就保持默认并在下方关掉健康检查）=====
+  rabbitmq:
+    host: ${MQ_HOST:localhost}
+    port: ${MQ_PORT:5672}
+    virtual-host: ${MQ_VHOST:/}
+    username: ${MQ_USER:guest}
+    password: ${MQ_PASSWORD:guest}
+
+  # ===== Elasticsearch（没有就把下方 app.search.enabled 设为 false）=====
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:bXktc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmcK}
+  # 有可用的 ES 就设 true；没有则 false，检索接口退回 NoOp（返回 503）
+  search:
+    enabled: ${SEARCH_ENABLED:false}
+
+  # 向量检索（ES dense_vector/kNN）。需 ES + 嵌入模型就绪才设 true；
+  # dimension 必须与所选嵌入模型一致（如 OpenAI text-embedding-3-small=1536）。
+  vector:
+    enabled: ${VECTOR_ENABLED:false}
+    index-name: law_segment
+    dimension: ${EMBED_DIM:1536}
+    similarity: cosine
+
+  # ===== 对象存储 MinIO / OSS（指向你已有的实例）=====
+  # 自托管 MinIO 默认 endpoint=http://host:9000，账号/密码即 root user/password；
+  # 阿里云等 OSS 则填对应 endpoint 与 AK/SK。
+  storage:
+    endpoint: ${OSS_ENDPOINT:http://localhost:9000}
+    bucket: ${OSS_BUCKET:lr-law}
+    access-key: ${OSS_ACCESS_KEY:minioadmin}
+    secret-key: ${OSS_SECRET_KEY:minioadmin}
+
+  ai:
+    default-provider: ${AI_DEFAULT_PROVIDER:openai}
+    providers:
+      openai:
+        enabled: ${AI_OPENAI_ENABLED:true}
+        type: openai
+        api-key: ${OPENAI_API_KEY:${AI_API_KEY:}}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        completions-path: ${OPENAI_COMPLETIONS_PATH:/v1/chat/completions}
+        model: ${OPENAI_MODEL_ID:${AI_MODEL_ID:gpt-4o}}
+        temperature: ${OPENAI_TEMPERATURE:0.2}
+        max-tokens: ${OPENAI_MAX_TOKENS:4096}
+      deepseek:
+        enabled: ${AI_DEEPSEEK_ENABLED:true}
+        type: deepseek
+        api-key: ${DEEPSEEK_API_KEY:}
+        base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+        completions-path: ${DEEPSEEK_COMPLETIONS_PATH:/chat/completions}
+        model: ${DEEPSEEK_MODEL_ID:deepseek-chat}
+        temperature: ${DEEPSEEK_TEMPERATURE:0.2}
+        max-tokens: ${DEEPSEEK_MAX_TOKENS:4096}
+      qwen:
+        enabled: ${AI_QWEN_ENABLED:true}
+        type: dashscope
+        api-key: ${DASHSCOPE_API_KEY:}
+        base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com}
+        model: ${QWEN_MODEL_ID:qwen-plus}
+        temperature: ${QWEN_TEMPERATURE:0.2}
+        max-tokens: ${QWEN_MAX_TOKENS:4096}
+      custom-compatible:
+        enabled: ${AI_CUSTOM_ENABLED:false}
+        type: openai-compatible
+        api-key: ${AI_CUSTOM_API_KEY:}
+        base-url: ${AI_CUSTOM_BASE_URL:http://localhost:8000}
+        completions-path: ${AI_CUSTOM_COMPLETIONS_PATH:/v1/chat/completions}
+        model: ${AI_CUSTOM_MODEL_ID:custom-chat}
+    embedding:
+      model-id: ${AI_EMBED_MODEL_ID:text-embedding-3-small}
+      dimension: ${EMBED_DIM:1536}
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  health:
+    # 没接入的外部服务把对应项设为 false，避免 /actuator/health 一直 DOWN
+    elasticsearch:
+      enabled: ${HEALTH_ES_ENABLED:false}
+    rabbit:
+      enabled: ${HEALTH_RABBIT_ENABLED:false}
+
+logging:
+  level:
+    root: INFO
+    cn.xku.law: DEBUG
+    com.baomidou.mybatisplus: DEBUG
+    org.springframework.security: DEBUG
